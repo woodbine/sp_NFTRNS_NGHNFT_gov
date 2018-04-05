@@ -84,7 +84,7 @@ def convert_mth_strings ( mth_string ):
 #### VARIABLES 1.0
 
 entity_id = "NFTRNS_NGHNFT_gov"
-url = "http://www.northamptongeneral.nhs.uk/AboutUs/FOI/FreedomofInformationAct2000/PublicationScheme/WhatWeSpend.aspx"
+url = "http://www.northamptongeneral.nhs.uk/About/Information-and-Data-Protection/Freedom-of-Information-Act/Freedom-of-Information-Act-2000/Publication-Scheme/What-we-spend-and-how-we-spend-it.aspx"
 errors = 0
 data = []
 
@@ -96,19 +96,30 @@ soup = BeautifulSoup(html, 'lxml')
 
 #### SCRAPE DATA
 
-blocks = soup.find('table', summary='Data Table').find_all_next('a')
+blocks = soup.find_all('h2')
 for block in blocks:
-    try:
-        if '.csv' in block['href'] or '.xls' in block['href'] or '.xlsx' in block['href'] or '.pdf' in block['href'] and 'nvoice' in block['title']:
-            link = 'http://www.northamptongeneral.nhs.uk'+block['href']
-            title = block.text.strip()
-            csvMth = title[:3]
-            csvYr = '20'+block['title'][-2:]
+    if '20' in block.text and '2018' not in block.text:
+        csvYr = block.text.strip()
+        rows = block.find_next('ul').find_all('a')
+        for row in rows:
+            link = 'http://www.northamptongeneral.nhs.uk'+row['href']
+            csvMth = row.text.strip()[:3]
             csvMth = convert_mth_strings(csvMth.upper())
             data.append([csvYr, csvMth, link])
-    except:
-        pass
-
+    if '2018' in block.text:
+        rows = block.find_all_next('p')
+        csvYr = '2018'
+        for row in rows:
+            title = row.find('a')
+            if title:
+                title = title['title']
+                if 'Report' in title:
+                    csvMth = row.find('a').text.strip()[:3]
+                    link = 'http://www.northamptongeneral.nhs.uk' + row.find('a')['href']
+                    if csvMth:
+                        csvMth = convert_mth_strings(csvMth.upper())
+                        data.append([csvYr, csvMth, link])
+   
 
 #### STORE DATA 1.0
 
